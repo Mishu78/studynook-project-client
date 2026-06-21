@@ -19,89 +19,42 @@ import { BookOpen } from "lucide-react";
 
 
 async function fetchFilteredRooms(searchParamsObj) {
-
-
-
   try {
-
-
-
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-
-
-
-   
-
-
-
-    // Construct request parameters smoothly from Next.js server search params object
-
-
-
     const queryParams = new URLSearchParams();
 
+    // ✅ Clean empty parameters out instead of passing empty string variables
+    if (searchParamsObj?.search?.trim()) {
+      queryParams.append("search", searchParamsObj.search.trim());
+    }
+    if (searchParamsObj?.amenities && searchParamsObj.amenities !== "") {
+      queryParams.append("amenities", searchParamsObj.amenities);
+    }
+    if (searchParamsObj?.minPrice && searchParamsObj.minPrice !== "") {
+      queryParams.append("minPrice", searchParamsObj.minPrice);
+    }
+    if (searchParamsObj?.maxPrice && searchParamsObj.maxPrice !== "") {
+      queryParams.append("maxPrice", searchParamsObj.maxPrice);
+    }
 
+    const finalUrl = `${baseUrl}/rooms?${queryParams.toString()}`;
+    console.log("📡 Next.js Server fetching from target path:", finalUrl);
 
-    if (searchParamsObj?.search) queryParams.append("search", searchParamsObj.search);
-
-
-
-    if (searchParamsObj?.amenities) queryParams.append("amenities", searchParamsObj.amenities);
-
-
-
-    if (searchParamsObj?.minPrice) queryParams.append("minPrice", searchParamsObj.minPrice);
-
-
-
-    if (searchParamsObj?.maxPrice) queryParams.append("maxPrice", searchParamsObj.maxPrice);
-
-
-
-
-
-
-
-    const res = await fetch(`${baseUrl}/rooms?${queryParams.toString()}`, {
-
-
-
+    const res = await fetch(finalUrl, {
       cache: "no-store",
-
-
-
     });
-
-
-
-   
-
-
-
-    if (!res.ok) return [];
-
-
-
-    return await res.json() || [];
-
-
-
+    
+    if (!res.ok) {
+      console.error(`Backend returned bad status payload structure: ${res.status}`);
+      return [];
+    }
+    
+    const data = await res.json();
+    return data || [];
   } catch (error) {
-
-
-
     console.error("Failed to fetch custom filtered catalog rooms:", error);
-
-
-
     return [];
-
-
-
   }
-
-
-
 }
 
 

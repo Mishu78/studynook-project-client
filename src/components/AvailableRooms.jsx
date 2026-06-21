@@ -5,17 +5,35 @@ import AvailableCard from "./AvailableCard";
 
 export const fetchFeaturedRooms = async () => {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+    // 1. Force the exact local loopback IP address to bypass bad local DNS configs
+    const baseUrl = "http://127.0.0.1:5000"; 
+    
+    // 2. Set up a 3-second timeout controller so the page NEVER hangs forever
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+    console.log(`📡 Attempting to fetch live featured spaces from: ${baseUrl}/featured`);
+
     const res = await fetch(`${baseUrl}/featured`, {
-      cache: "no-store",
+      cache: "no-store", // Get fresh data every time
+      signal: controller.signal,
     });
 
-    if (!res.ok) return [];
+    clearTimeout(timeoutId); // Clear timeout if successful
+
+    if (!res.ok) {
+      console.error(`❌ Backend returned an error status: ${res.status}`);
+      return [];
+    }
+
     const data = await res.json();
+    console.log("✅ Successfully retrieved live spaces:", data.length);
     return data || [];
+
   } catch (error) {
-    console.error("Failed to fetch featured rooms:", error);
-    return [];
+    // This will print the exact reason (e.g., Connection Refused, Timed Out) in your terminal
+    console.error("⚠️ Live fetch failed:", error.message);
+    return []; // Return empty array gracefully so your website still loads!
   }
 };
 

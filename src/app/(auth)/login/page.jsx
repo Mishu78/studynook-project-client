@@ -22,51 +22,42 @@ export default function Login() {
 
 
 
-  const handleLogin = async (e) => {
+ const handleLogin = async (e) => {
+  e.preventDefault();
 
-    e.preventDefault();
+  try {
+    const formData = new FormData(e.currentTarget);
+    const loginData = Object.fromEntries(formData.entries());
 
-
-
-    try {
-
-      const formData = new FormData(e.currentTarget);
-
-      const loginData = Object.fromEntries(formData.entries());
-
-
-
-      const { data, error } = await signIn.email({
-
-        ...loginData,
-
-        callbackURL: "/"
-
-      });
-
-     
-
-      if (error) {
-
-        toast.error(error.message || "Login failed");
-
-        return;
-
+    // ✅ FIX: Use onSuccess inside fetchOptions to intercept redirection cleanly
+    const { data, error } = await signIn.email({
+      email: loginData.email,
+      password: loginData.password,
+    }, {
+      onRequest: () => {
+        // Optional loading states can go here
+      },
+      onSuccess: (ctx) => {
+        // Better Auth places the JWT token inside the context data payload
+        const token = ctx.data?.token || ctx.data?.session?.token;
+        if (token) {
+          localStorage.setItem('access-token', token);
+        }
+        
+        toast.success("Logged in successfully!");
+        router.push("/");
+        router.refresh();
+      },
+      onError: (ctx) => {
+        toast.error(ctx.error.message || "Login failed");
       }
+    });
 
-
-
-      toast.success("Logged in successfully!");
-
-      router.push("/");
-
-    } catch (err) {
-
-      toast.error("Something went wrong. Please try again.");
-
-    }
-
-  };
+  } catch (err) {
+    console.error("Login Error:", err);
+    toast.error("Something went wrong. Please try again.");
+  }
+};
 
 
 
