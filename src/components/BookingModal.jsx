@@ -69,7 +69,8 @@ export default function BookingModal({ room, session, onClose, onBookingSuccess 
         userName: session?.user?.name
       };
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings`, {
+      // ✅ FIXED PATH: Removed "/api" to perfectly match your Express backend routes
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/bookings`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
