@@ -34,15 +34,15 @@ export default function Login() {
       email: loginData.email,
       password: loginData.password,
     }, {
-      onRequest: () => {
-        // Optional loading states can go here
-      },
       onSuccess: (ctx) => {
         // Better Auth places the JWT token inside the context data payload
-        const token = ctx.data?.token || ctx.data?.session?.token;
+        const token = ctx.data?.token ;
         if (token) {
           localStorage.setItem('access-token', token);
-        }
+        }else if (ctx.data?.session?.id) {
+      // Fallback if token isn't directly exposed
+      localStorage.setItem('access-token', ctx.data.session.id);
+    }
         
         toast.success("Logged in successfully!");
         router.push("/");
@@ -354,4 +354,3 @@ export default function Login() {
   );
 
 } 
-

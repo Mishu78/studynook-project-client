@@ -82,31 +82,31 @@ const { data: session} = useSession();
 
 
 
-    const token = localStorage.getItem('access-token');
+    // const token = localStorage.getItem('access-token');
 
 
 
-    if (token) {
+    // if (token) {
 
 
 
-      try {
+    //   try {
 
 
 
-        const payload = JSON.parse(atob(token.split('.')[1]));
+    //     const payload = JSON.parse(atob(token.split('.')[1]));
 
 
 
-        setCurrentUser(payload);
+    //     setCurrentUser(payload);
 
 
 
-      } catch (e) { console.error(e); }
+    //   } catch (e) { console.error(e); }
 
 
 
-    }
+    // }
 
 
 
@@ -206,7 +206,7 @@ const { data: session} = useSession();
 
 
 
-      const res = await fetch(`${baseUrl}/bookings`, {
+      const res = await fetch(`${baseUrl}/api/bookings`, {
 
 
 
