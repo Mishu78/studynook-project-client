@@ -1,14 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState,useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Input, Textarea } from '@heroui/react';
+// ✅ FIXED: Imported TextArea (Capital A) directly from the main package
+import { Button, Input, TextArea } from '@heroui/react';
 import { PlusCircle, Layers, Users, DollarSign, Image } from 'lucide-react';
-import { authClient } from '@/lib/auth-client'; // Replace with your exact Better Auth client path
+import { authClient, useSession } from '@/lib/auth-client'; 
 import { toast } from 'react-hot-toast';
 
 export default function AddRoomPage() {
+  const formRef = useRef(null);
   const router = useRouter();
+  const { data: session } = useSession(); 
   const [actionLoading, setActionLoading] = useState(false);
   const [selectedAmenities, setSelectedAmenities] = useState([]);
 
@@ -25,18 +28,17 @@ export default function AddRoomPage() {
     e.preventDefault();
     setActionLoading(true);
 
-    // 1. Grab session data from your Better Auth Client setup
-    const session = await authClient.getSession();
-    const token = session?.data?.session?.token;
+    const { data: jwtData } = await authClient.token();
+    const token = jwtData?.token;
 
-    if (!token) {
+    if (!token || !session?.user) {
       toast.error("Please log in to publish a workspace listing.");
       router.push('/login');
       setActionLoading(false);
       return;
     }
 
-    const formData = new FormData(e.currentTarget);
+    const formData = new FormData(formRef.current);
 
     const newRoomPayload = {
       roomName: formData.get('roomName'),
@@ -44,8 +46,10 @@ export default function AddRoomPage() {
       floor: formData.get('floor'),
       capacity: parseInt(formData.get('capacity')),
       hourlyRate: parseFloat(formData.get('hourlyRate')),
-      image: formData.get('image'),
+      image: formData.get('image') || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=600", 
       amenities: selectedAmenities,
+      createdBy: session.user.email, 
+      bookingCount: 0
     };
 
     try {
@@ -53,17 +57,18 @@ export default function AddRoomPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` // Pass JWT cleanly to JWKS verification layer
+          'Authorization': `Bearer ${token}` 
         },
         body: JSON.stringify(newRoomPayload)
       });
 
+      const responseData = await res.json().catch(() => ({}));
+
       if (res.ok) {
         toast.success("Sanctuary room posted successfully!");
-        router.push('/my-listings');
+        router.push('/my-listings'); 
       } else {
-        const errorData = await res.json();
-        toast.error(errorData.message || "Failed to publish room listing.");
+        toast.error(responseData.message || "Failed to publish room listing.");
       }
     } catch (err) {
       console.error(err);
@@ -84,12 +89,13 @@ export default function AddRoomPage() {
           <p className="text-stone-500 text-xs mt-1">Configure your room details, setup floor environments, and declare pricing rates.</p>
         </div>
 
-        <form onSubmit={handleAddRoomSubmit} className="space-y-5">
+        <form ref={formRef} onSubmit={handleAddRoomSubmit} className="space-y-5">
           
           {/* 01. BASIC DETAILS */}
           <div className="space-y-3">
             <Input label="Room Name" name="roomName" required variant="bordered" radius="xl" placeholder="e.g., Emerald Core Lab" />
-            <Textarea label="Description" name="description" required variant="bordered" radius="xl" placeholder="Describe layout configurations, sound insulation..." minRows={3} />
+            {/* ✅ FIXED: Updated to use <TextArea /> component signature */}
+            <TextArea label="Description" name="description" required variant="bordered" radius="xl" placeholder="Describe layout configurations, sound insulation..." rows={3} />
           </div>
 
           {/* 02. SPATIAL MATRIX CONTEXT */}
@@ -100,7 +106,7 @@ export default function AddRoomPage() {
           </div>
 
           {/* 03. GALLERY UTILITY LINK */}
-          <Input label="Image URL From Internet" name="image" type="url" variant="bordered" radius="xl" placeholder="https://unsplash.com/..." startContent={<Image className="w-4 h-4 text-stone-400" />} />
+          <Input label="Image URL From Internet" name="image" type="url" variant="bordered" radius="xl" placeholder="https://images.unsplash.com/..." startContent={<Image className="w-4 h-4 text-stone-400" />} />
 
           {/* 04. AMENITIES CONTROL CHIPS */}
           <div className="space-y-2">

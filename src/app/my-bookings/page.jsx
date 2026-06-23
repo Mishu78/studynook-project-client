@@ -16,7 +16,9 @@ export default function MyBookings() {
     if (!session?.user?.id) return;
     try {
       const { data: jwtData } = await authClient.token();
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/user/${session.user.id}`, {
+      
+      // ✅ FIXED PATH: Removed "/api" to match backend route directly
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/bookings/user/${session.user.id}`, {
         headers: { Authorization: `Bearer ${jwtData?.token}` }
       });
       const data = await res.json();
@@ -38,7 +40,9 @@ export default function MyBookings() {
     if (!targetCancel) return;
     try {
       const { data: jwtData } = await authClient.token();
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${targetCancel}/cancel`, {
+      
+      // ✅ FIXED PATH: Removed "/api" to match backend patch cancellation pipeline
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/bookings/${targetCancel}/cancel`, {
         method: "PATCH",
         headers: { Authorization: `Bearer ${jwtData?.token}` }
       });
@@ -175,4 +179,4 @@ export default function MyBookings() {
       )}
     </div>
   );
-} 
+}

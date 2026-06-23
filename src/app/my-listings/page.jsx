@@ -12,21 +12,26 @@ export default function MyListings() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Only fetch if session loading has finished and a valid user email exists
     if (!isPending && session?.user?.email) {
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/rooms`)
+      
+      // ✅ OPTIMIZED: Fetching using the query filter directly to lighten payload sizes
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/rooms?createdBy=${encodeURIComponent(session.user.email)}`)
         .then((res) => res.json())
         .then((data) => {
-          // Filter listings down to match the currently logged in owner profile email string
-          const filtered = data.filter(room => room.createdBy === session.user.email);
-          setMyRooms(filtered);
-          loading && setLoading(false);
+          if (Array.isArray(data)) {
+            setMyRooms(data);
+          }
         })
         .catch((err) => {
-          console.error(err);
+          console.error("Failed loading listings:", err);
+        })
+        .finally(() => {
+          // ✅ SAFE STATE CLOSURE: Ensures loading is disabled perfectly exactly once
           setLoading(false);
         });
     }
-  }, [session, isPending]);
+  }, [session?.user?.email, isPending]); // 🎯 Pinning down to the explicit email string dependency stops tracking context changes
 
   if (isPending || loading) {
     return <div className="text-center py-20 font-bold text-stone-500">Syncing ownership parameters...</div>;
