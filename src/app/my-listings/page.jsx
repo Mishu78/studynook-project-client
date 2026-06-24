@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "@/lib/auth-client";
-import RoomCard from "@/components/RoomCard";
+import ManagedRoomCard from "@/components/ManagedRoomCard"; // Ensure this matches your path
 import Link from "next/link";
 import { PlusCircle } from "lucide-react";
 
@@ -11,27 +11,32 @@ export default function MyListings() {
   const [myRooms, setMyRooms] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Wrap fetching logic so it can be passed safely to child components for re-renders
+  const fetchMyListings = useCallback(() => {
+    if (!session?.user?.email) return;
+
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/rooms?createdBy=${encodeURIComponent(session.user.email)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setMyRooms(data);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed loading listings:", err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [session?.user?.email]);
+
   useEffect(() => {
-    // Only fetch if session loading has finished and a valid user email exists
     if (!isPending && session?.user?.email) {
-      
-      // ✅ OPTIMIZED: Fetching using the query filter directly to lighten payload sizes
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/rooms?createdBy=${encodeURIComponent(session.user.email)}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (Array.isArray(data)) {
-            setMyRooms(data);
-          }
-        })
-        .catch((err) => {
-          console.error("Failed loading listings:", err);
-        })
-        .finally(() => {
-          // ✅ SAFE STATE CLOSURE: Ensures loading is disabled perfectly exactly once
-          setLoading(false);
-        });
+      fetchMyListings();
+    } else if (!isPending && !session) {
+      setLoading(false);
     }
-  }, [session?.user?.email, isPending]); // 🎯 Pinning down to the explicit email string dependency stops tracking context changes
+  }, [session, isPending, fetchMyListings]);
 
   if (isPending || loading) {
     return <div className="text-center py-20 font-bold text-stone-500">Syncing ownership parameters...</div>;
@@ -57,9 +62,13 @@ export default function MyListings() {
             <p className="text-stone-500 font-semibold">You haven't listed any study spaces yet.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="space-y-6">
             {myRooms.map((room) => (
-              <RoomCard key={room._id} room={room} />
+              <ManagedRoomCard 
+                key={room._id} 
+                room={room} 
+                onRefresh={fetchMyListings} 
+              />
             ))}
           </div>
         )}
